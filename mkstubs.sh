@@ -1,8 +1,8 @@
 #!/bin/sh
 # mkstubs.sh --- program to create a library of stub functions
-# that will be substituted by implementations of such, so the
-# program can be built, despite of the advance in the
-# implementation.
+#   that will be substituted by implementations of such, so the
+#   program can be built, despite of the advance in the
+#   implementation.
 #
 # Author: Luis Colorado <luiscoloradourcola@gmail.com>
 # Date: Tue Jul 30 20:55:34 EEST 2019

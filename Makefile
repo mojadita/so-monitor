@@ -11,7 +11,7 @@ COPYRIGHT = (C) 2019 LUIS COLORADO.  All rithst reserved
 CFLAGS += -DVERSION=\""$(VERSION)"\" -DCOPYRIGHT=\""$(COPYRIGHT)"\"
 
 libstubs_sources != mkstubs.sh
-toclean += $(libstubs_sources) $(libstubs_sources:.c=.o)
+toclean += libstubs.a
 
 RM ?= rm -f
 
@@ -26,7 +26,6 @@ clean:
 	$(RM) $(toclean)
 
 
-toclean += libstubs.a
 libstubs.a: mkstubs.sh
 	$(CC) $(CFLAGS) -c $(libstubs_sources)
 	ar cr $@ $(libstubs_sources:.c=.o)

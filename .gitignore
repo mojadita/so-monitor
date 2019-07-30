@@ -1,5 +1,5 @@
 *.[ao]
-stubs_*.[co]
+stub_*.[co]
 *.core
 core
 mon

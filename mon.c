@@ -1,5 +1,6 @@
 /* mon.c --- program to monitor several tty devices in order to
- * 			 timestamp reads from them.
+ * 	 timestamp reads from them.
+ *
  * Author: Luis Colorado <luiscoloradourcola@gmail.com>
  * Copyright: (C) 2019 LUIS COLORADO.  All rights reseerved.
  * License: Berkeley Software Distribution (BSD) V3
@@ -12,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/select.h>
+#include <sys/signal.h>
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
@@ -39,6 +41,14 @@ size_t		in_fds_n;
 
 FILE	   *output_file;
 int         config_baudrate;
+
+static volatile
+int signals_received = 0;
+
+void signal_handler()
+{
+	signals_received++;
+}
 
 void do_version()
 {
@@ -78,6 +88,17 @@ void do_help()
 		"      included also in this screen.\n"
 		"",
 		program_name);
+}
+
+void do_finish()
+{
+	int i;
+	struct file_info *fi;
+	for (i = 0, fi = in_fds; i < in_fds_n; i++, fi++) {
+		if (fi->fi_fd >= 0)
+			reset_tty(fi);
+	}
+	exit(EXIT_SUCCESS);
 }
 
 int main(int argc, char **argv)
@@ -193,17 +214,23 @@ int main(int argc, char **argv)
 				fi->fi_name, strerror(errno));
 			continue;
 		}
-		if (!init_tty(fi)) {
-			close(fi->fi_fd);
-			fi->fi_fd = -1;
+		if (config_flags & FLAG_DEBUG) {
+			fprintf(stderr,
+				F("OPEN: %s -> fd #%d\n"),
+				fi->fi_name, fi->fi_fd);
+		}
+		if (init_tty(fi)) {
 			continue;
 		}
 		/* tty has been opened and intialized */
 		in_fds_n++; fi++;
 	} /* for */
 
-	fd_set readers;
+	signal(SIGINT, signal_handler);
+	signal(SIGTERM, signal_handler);
+	signal(SIGHUP, signal_handler);
 	for (;;) {
+		fd_set readers;
 		FD_ZERO(&readers);
 		int max = -1;
 		fi = in_fds;
@@ -222,6 +249,10 @@ int main(int argc, char **argv)
 		}
 		int res = select(++max, &readers, NULL, NULL, NULL);
 		if (res < 0) {
+			if (signals_received) {
+				do_finish();
+				/* NOT REACHED */
+			}
 			fprintf(stderr,
 				F("select: ERROR %d: %s\n"),
 				errno, strerror(errno));
@@ -234,27 +265,42 @@ int main(int argc, char **argv)
 		/* res > 0, at least one descriptor has data. */
 		struct timespec ts; /* get timestamp */
 		clock_gettime(CLOCK_REALTIME, &ts);
+		if (config_flags & FLAG_DEBUG) {
+			fprintf(stderr,
+				F("timestamp: %llu.%09lu\n"),
+				ts.tv_sec, ts.tv_nsec);
+		}
 		struct file_info *list[MAX_FDS];
 		size_t list_n = 0;
 		for (i = 0, fi = in_fds; i < in_fds_n; i++, fi++) {
 			if (fi->fi_fd < max && FD_ISSET(fi->fi_fd, &readers)) {
 				ssize_t n = read(fi->fi_fd, fi->fi_buf,
-					sizeof fi->fi_bufsz);
+					sizeof fi->fi_buf);
+				if (config_flags & FLAG_DEBUG) {
+					fprintf(stderr,
+						F("%s: read %d bytes from fd %d.\n"),
+						fi->fi_name, n, fi->fi_fd);
+				}
 				if (n < 0) { /* error */
 					fprintf(stderr,
-						F("%s: read: ERROR %d: %s\n"),
-						fi->fi_name, errno, strerror(errno));
-					close(fi->fi_fd);
-					fi->fi_fd = -1;
+						F("%s: read(%d): ERROR %d: %s\n"),
+						fi->fi_name, fi->fi_fd,
+						errno, strerror(errno));
+					reset_tty(fi);
 				} else if (n == 0) { /* EOF */
 					if (config_flags & FLAG_DEBUG) {
 						fprintf(stderr,
-							F("%s: EOF, closing file.\n"),
-							fi->fi_name);
+							F("%s: EOF, closing file fd %d.\n"),
+							fi->fi_name, fi->fi_fd);
 					}
-					close(fi->fi_fd);
-					fi->fi_fd = -1;
+					reset_tty(fi);
 				} else { /* n > 0 */
+					if (config_flags & FLAG_DEBUG) {
+						fprintf(stderr,
+							F("%s: adding %d bytes to"
+								" buffer.\n"),
+							fi->fi_name, n);
+					}
 					fi->fi_bufsz = n;
 					list[list_n++] = fi;
 				}
@@ -263,9 +309,11 @@ int main(int argc, char **argv)
 
 		/* what we have received is in the buffers, now we have
 		 * to printit, but in paralell form */
-		for(i = 0; i < list_n; i++) {
-			if (fmt->f_format)		fmt->f_format(list[i]);
-			if (fmt->f_timestamp)	fmt->f_timestamp(list[i], &ts);
+		if (fmt) {
+			for(i = 0; i < list_n; i++) {
+				if (fmt->f_format)		fmt->f_format(list[i]);
+				if (fmt->f_timestamp)	fmt->f_timestamp(list[i], &ts);
+			}
 		}
 	} /* for (;;) */
 }

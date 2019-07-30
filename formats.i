@@ -5,6 +5,3 @@
  * License: BSD.
  */
 _FMT(hex)
-_FMT(hex_col)
-_FMT(two_lines_col)
-_FMT(two_lines)

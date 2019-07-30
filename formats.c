@@ -20,9 +20,11 @@ struct format
 					of_ ## _name ## _format, \
 					of_ ## _name ## _timestamp, },
 #include "formats.i"
-	{ 0, of_two_lines_col_format, 0 },
 #undef _FMT
 }; /* o_fmts */
+
+size_t formats_table_n = sizeof formats_table /
+			sizeof formats_table[0];
 
 struct format *get_format(const char *name)
 {
@@ -32,18 +34,20 @@ struct format *get_format(const char *name)
 			F("searching for %s..."),
 			name);
 	}
-	for( res = formats_table;
-		    res->f_name
+	int i;
+	for( res = formats_table, i = 0;
+			i < formats_table_n
 		 && strcmp(res->f_name, name);
-		 res++) {
+		 res++, i++) {
 		/* empty loop body */
 	} /* for */
+	int found = i < formats_table_n;
 	if (config_flags & FLAG_DEBUG) {
 		fprintf(stderr,
 			" %s\n",
-			res->f_name
+			found
 				? "found"
 				: "not found, using default");
 	}
-	return res;
+	return found ? res : formats_table;
 } /* get_format */
