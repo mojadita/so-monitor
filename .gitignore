@@ -1,0 +1,5 @@
+*.[ao]
+stubs_*.[co]
+*.core
+core
+mon
