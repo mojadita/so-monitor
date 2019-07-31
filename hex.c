@@ -33,24 +33,25 @@ size_t fprintbuf(struct file_info *fi, const struct timespec *ts)
 		p += ++n; bufsz -= n; /* ++ to skip the null char */
 	
 		snprintf(p, bufsz,
-			F("TS: %llu.%09lu (%s)"),
+			" %llu.%09lu (%s)",
 			ts->tv_sec, ts->tv_nsec, buff);
-		n = fprintf(output_file, F("%s\n"), p); /* print out the timestamp */
-		if (n < 0) {
-			fprintf(stderr,
-				F("fprintf: ERROR %d: %s\n"),
-				errno, strerror(errno));
-			exit(EXIT_FAILURE);
-		}
-		res += n;
+	} else p = "";
+	n = fprintf(output_file, "%s:%s\n",
+		fi->fi_name, p); /* print out the timestamp */
+	if (n < 0) {
+		fprintf(stderr,
+			F("fprintf: ERROR %d: %s\n"),
+			errno, strerror(errno));
+		exit(EXIT_FAILURE);
 	}
+	res += n;
 
 	int off = 0;
 	p = buff; bufsz = sizeof buff;
 	while (fi->fi_bufsz > 0) {
 
 		/* the offset */
-		n = snprintf(p, bufsz, F("%06x:"), off);
+		n = snprintf(p, bufsz, "%06x:", off);
 		p += n; bufsz -= n;
 
 		/* the first part in hex */
@@ -76,7 +77,8 @@ size_t fprintbuf(struct file_info *fi, const struct timespec *ts)
 			p += n; bufsz -= n;
 			sep = "";
 		}
-		n = fprintf(output_file, F("%s\n"), buff);
+		fi->fi_bufsz -= i;
+		n = fprintf(output_file, ("%s\n"), buff);
 		if (n < 0) {
 			fprintf(stderr,
 				F("fprintf: ERROR %d: %s\n"),
@@ -85,9 +87,8 @@ size_t fprintbuf(struct file_info *fi, const struct timespec *ts)
 		}
 		res += n;
 	}
-	fi->fi_bufsz = 0;
 	n = fprintf(stderr,
-		F("%06x\n"), off);
+		"%06x\n", off);
 	if (n < 0) {
 		fprintf(stderr,
 			F("fprintf: ERROR %d: %s\n"),

@@ -35,6 +35,9 @@ size_t formats_table_n
 const struct format *get_format(const char *name)
 {
 	int i;
+
+	if (!name) return formats_table[0];
+
 	for( i = 0; i < formats_table_n; i++)
 		if (!strcmp(name, formats_table[i]->f_name))
 			break;

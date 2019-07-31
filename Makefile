@@ -5,7 +5,7 @@
 # License: BSD.
 
 targets = mon
-VERSION = 0.1-incubating
+VERSION = 0.2-incubating
 COPYRIGHT = (C) 2019 LUIS COLORADO.  All rithst reserved
 
 CFLAGS += -DVERSION=\""$(VERSION)"\" -DCOPYRIGHT=\""$(COPYRIGHT)"\"

@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,9 +46,15 @@ int         config_baudrate;
 static volatile
 int signals_received = 0;
 
-void signal_handler()
+void signal_handler(int sig)
 {
 	signals_received++;
+	if (config_flags & FLAG_DEBUG) {
+		fprintf(stderr,
+			F("received %d signal, received %d signals, closing\n"),
+			sig,
+			signals_received);
+	}
 }
 
 void do_version()
@@ -253,28 +260,45 @@ int main(int argc, char **argv)
 		in_fds_n++; fi++;
 	} /* for */
 
-	signal(SIGINT, signal_handler);
-	signal(SIGTERM, signal_handler);
-	signal(SIGHUP, signal_handler);
+	struct sigaction sa;
+	memset(&sa, 0, sizeof sa);
+	sa.sa_handler = signal_handler;
+
+	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGTERM, &sa, NULL);
+	sigaction(SIGHUP, &sa, NULL);
+
 	for (;;) {
 		fd_set readers;
 		FD_ZERO(&readers);
 		int max = -1;
 		fi = in_fds;
-		for (i = 0; i < in_fds_n; i++) {
+		for (i = 0; i < in_fds_n; i++, fi++) {
 			if (fi->fi_fd < 0)
 				continue; /* already closed */
+			if (config_flags & FLAG_DEBUG) {
+				fprintf(stderr, F("%s: setting fd %d as possible"
+					" input\n"),
+					fi->fi_name, fi->fi_fd);
+			}
 			FD_SET(fi->fi_fd, &readers);
-			if (max < fi->fi_fd)
+			if (max < fi->fi_fd) {
 				max = fi->fi_fd;
+				if (config_flags & FLAG_DEBUG) {
+					fprintf(stderr, F("%s: adjusting max to the"
+							" value %d.\n"),
+							fi->fi_name, max);
+				}
+			}
 		}
 		if (max < 0) break; /* no descriptor available */
 
 		/* blocking select until input on some file descriptor */
 		if (config_flags & FLAG_DEBUG) {
-			fprintf(stderr, F("entering select...\n"));
+			fprintf(stderr, F("entering select(max == %d)...\n"),
+			++max);
 		}
-		int res = select(++max, &readers, NULL, NULL, NULL);
+		int res = select(max, &readers, NULL, NULL, NULL);
 		if (res < 0) {
 			if (signals_received) {
 				do_finish();
