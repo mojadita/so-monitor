@@ -16,8 +16,8 @@ processing as soon as possible.
 Using select makes it a best approach to read ASAP, while not
 consuming innecessary CPU time.
 
-To end, nothing but saying that the program answers the question
-made in [StackOverflow](https://stackoverflow.com/questions/57234078/how-to-read-multiple-serial-ports-in-realtime-in-c-or-python/57251384#57251384)
+To end, nothing but saying that the program answers [the question
+made in StackOverflow](https://stackoverflow.com/questions/57234078/how-to-read-multiple-serial-ports-in-realtime-in-c-or-python/57251384#57251384)
 on how to read simultaneously several serial ports with maximum
 time granularity, as to be able to see the temporal sequence of
 data flow.
