@@ -4,9 +4,14 @@
 # Copyright: (C) 2019 LUIS COLORADO.  All rights reserved.
 # License: BSD.
 
-targets = mon
-VERSION = 0.2-incubating
-COPYRIGHT = (C) 2019 LUIS COLORADO.  All rithst reserved
+prefix   ?= $(HOME)
+bindir   ?= $(prefix)/bin
+mandir   ?= $(prefix)/man
+man1dir	 ?= $(mandir)/man1
+
+targets   = mon
+VERSION   = 0.2-incubating
+COPYRIGHT = (C) 2019 LUIS COLORADO.  All rights reserved.
 
 CFLAGS += -DVERSION=\""$(VERSION)"\" -DCOPYRIGHT=\""$(COPYRIGHT)"\"
 
@@ -14,6 +19,8 @@ libstubs_sources != mkstubs.sh
 toclean += libstubs.a
 
 RM ?= rm -f
+INSTALL ?= install
+INSTFLAGS ?= -o `id -u` -g `id -g`
 
 mon_objs = mon.o formats.o tty.o hex.o
 mon_deps = libstubs.a
@@ -24,6 +31,10 @@ mon_ldflags = -L.
 all: $(targets)
 clean:
 	$(RM) $(toclean)
+install: $(targets)
+	$(INSTALL) $(INSTFLAGS) -d $(bindir) $(man1dir)
+	$(INSTALL) $(INSTFLAGS) -m 0711 mon $(bindir)
+	$(INSTALL) $(INSTFLAGS) -m 0644 mon.1 $(man1dir)
 
 
 libstubs.a: mkstubs.sh
