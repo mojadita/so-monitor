@@ -18,13 +18,13 @@ int init_tty(struct file_info *fi)
 {
 	if (config_flags & FLAG_DEBUG) {
 		fprintf(stderr,
-			F("initialize tty %s...\n"),
+			F("%s: initialize tty...\n"),
 			fi->fi_name);
 	}
 	int res = tcgetattr(fi->fi_fd, &fi->fi_termios);
 	if (res < 0) {
 		fprintf(stderr,
-			F("tcgetattr: %s: ERROR %d: %s\n"),
+			F("%s: tcgetattr: ERROR %d: %s\n"),
 			fi->fi_name, errno, strerror(errno));
 		return -1;
 	}
