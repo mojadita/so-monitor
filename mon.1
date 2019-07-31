@@ -1,0 +1,109 @@
+.Dd $Mdocdate$
+.Dt MON 1
+.OS
+.Sh NAME
+.Nm mon
+.Nd a program to monitor several input devices to trace.
+.Sh SYNOPSIS
+.Nm mon
+.Op Fl 125678ONEdhtv
+.Op Fl b Ar baudrate
+.Op Fl f Ar format
+.Op Fl o Ar outfile
+.Op Fl -
+.Ar "ttydev ..."
+.Sh DESCRIPTION
+The
+.Nm mon
+allows you to monitor several input tty lines, by configuring
+them in raw mode and setting them to process each character
+individually as it is ready to be
+.Cm read(2).
+.Pp
+The
+.Nm
+command just monitors all the lines in a common wait using
+.Cm select(2),
+and as data is read on any of those lines, it is output to an
+output file, or to
+.Cm stdout
+by default.
+.Sh OPTIONS
+Command options allow you to configure the devices, but the
+configuration is common for all of them.  
+In case a device doesn't allow to be configured, it is discarded
+for monitoring purposes and the monitoring proceeds with the
+remaining devices specified in the command line.
+.Bl -tag 
+.It Fl 12
+Configures the serial line to accept one or two (or 1.5, for
+5bit/char configurations) stop bits.
+If not used, this option is not configured in the tty, remaining
+the value the device has by default (or was previously
+configured)
+.It Fl 5678
+Allows to configure the number of bits per character.
+If not configured, the already configured value is conserved.
+.It Fl ONE
+Allows to configure (O)dd, (N)one, or (E)ven parity on the
+configured device.
+.It Fl b Ar baudrate
+The device is configured at the specified baudrate.
+.It Fl d
+Debug mode.  In this mode, the
+.Nm
+command shows trace lines about what it is doing internally.
+Very interesting for debugging purposes.
+.It Fl f Ar format
+This option allows to select one of several devices, to output
+different formats.  Only one
+.Cm hex
+driver is actually implemented, while provision has been made to
+implement more.
+.It Fl h
+Help.  Gives a help screen an stops.  The program shows the valid
+options and the syntax to call it from the command line.
+.It Fl o Ar outfile
+The program outputs the formatted data to the file specified as
+.Ar outfile.
+If not used, output goes to
+.Fl stdout.
+.It Fl t
+Do timestamping.
+As
+.Cm select(2)
+is unblocked, the program gets a timestamp to associate to all
+the devices that have input (it can happen that two devices give
+data at the same time, or for a single device, e.g. a utf-8
+capable device) to give several characters in one shot.
+This is unfortunately unavoidable, as it is the device driver the
+responsible of making several characters available in one shot.
+Nevertheless, on a true serial line, those characters would have
+been given in order, and should appear in different packets.
+.Pp
+Tests have been done in a console terminal on a Raspberry Pi 2B+
+running FreeBSD 12.0, and only keying function keys or keypad
+keys it has been possible to input several keys in one single
+packet.
+.Pp
+By the way, timestamping is done with the
+.Cm clock_gettime(2)
+system call, that gives nanosecond resolution.
+Not all drivers will allow timestamping, when they are
+implemented.
+The one available now (
+.Cm hex
+) is available with and without timestamping.
+.Li Ar v
+Shows version and copyright information.
+License is BSD style, so you can modify the program as you like,
+but you must respect the headers in the files, indicating the
+author and the copyright material, as well as the message output
+for the
+.Fl v
+and
+.Fl h
+options.
+.El
+.Sh AUTHOR
+.An "Luis Colorado" Aq Mt luiscoloradourcola@gmail.com
