@@ -32,16 +32,16 @@ all: $(targets)
 clean:
 	$(RM) $(toclean)
 install: $(targets)
-	$(INSTALL) $(INSTFLAGS) -d $(bindir) $(man1dir)
-	$(INSTALL) $(INSTFLAGS) -m 0711 mon $(bindir)
-	$(INSTALL) $(INSTFLAGS) -m 0644 mon.1 $(man1dir)
+	-$(INSTALL) $(INSTFLAGS) -d $(bindir) $(man1dir)
+	-$(INSTALL) $(INSTFLAGS) -m 0711 mon $(bindir)
+	-$(INSTALL) $(INSTFLAGS) -m 0644 mon.1 $(man1dir)
 
 
 libstubs.a: mkstubs.sh
 	$(CC) $(CFLAGS) -c $(libstubs_sources)
 	ar cr $@ $(libstubs_sources:.c=.o)
 	...
-	$(RM) $(libstubs_sources) $(libstubs_sources:.c=.o)
+	$(RM) $(libstubs_sources:.c=.o)
 
 .for t in $(targets)
 toclean += $t $($t_objs) $($t_toclean)
