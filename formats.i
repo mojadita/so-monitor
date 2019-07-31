@@ -5,3 +5,6 @@
  * License: BSD.
  */
 _FMT(hex)
+_FMT(hex_color)
+_FMT(curses_multiline)
+_FMT(curses_ml_color)

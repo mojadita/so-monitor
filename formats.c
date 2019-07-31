@@ -14,40 +14,45 @@
 #include "formats.h"
 #include "tty.h"
 
-struct format
-	formats_table[] = {
-#define _FMT(_name) { #_name, \
-					of_ ## _name ## _format, \
-					of_ ## _name ## _timestamp, },
+/* static table of pointers to descriptors to search for */
+static const struct format
+	*formats_table[] = {
+#define _FMT(_name) &of_ ## _name ## _sp,
 #include "formats.i"
 #undef _FMT
-}; /* o_fmts */
+}; /* formats_table */
 
-size_t formats_table_n = sizeof formats_table /
-			sizeof formats_table[0];
+/* size of formats_table table */
+static const
+size_t formats_table_n
+	= sizeof formats_table
+	/ sizeof formats_table[0];
 
-struct format *get_format(const char *name)
+/* search function to search for the driver.
+ * this can be moved to a dlopen(3) api routine, as normally
+ * one driver is used, there's no need to load them all.
+ * This will also simplify the handling of the drivers. */
+const struct format *get_format(const char *name)
 {
-	struct format *res;
-	if (config_flags & FLAG_DEBUG) {
-		fprintf(stderr,
-			F("searching for %s..."),
-			name);
-	}
 	int i;
-	for( res = formats_table, i = 0;
-			i < formats_table_n
-		 && strcmp(res->f_name, name);
-		 res++, i++) {
-		/* empty loop body */
-	} /* for */
+	for( i = 0; i < formats_table_n; i++)
+		if (!strcmp(name, formats_table[i]->f_name))
+			break;
+
 	int found = i < formats_table_n;
+	const struct format *res =
+		found
+			? formats_table[i]
+			: formats_table[0];
 	if (config_flags & FLAG_DEBUG) {
-		fprintf(stderr,
-			" %s\n",
-			found
-				? "found"
-				: "not found, using default");
+		if (found)
+			fprintf(stderr,
+				F("searching for %s... found!\n"),
+				name);
+		else
+			fprintf(stderr,
+				F("searching for %s... not found, using %s\n"),
+				name, res->f_name);
 	}
-	return found ? res : formats_table;
+	return res;
 } /* get_format */

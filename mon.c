@@ -63,7 +63,7 @@ void do_help()
 {
 	do_version();
 	fprintf(stderr,
-		"Usage: %s [-125678ONEMSdhv] [-b baudrate] [-f format] "
+		"Usage: %s [-125678ONEMSdhtv] [-b baudrate] [-f format] "
 		"[-o outfile] [file ...]\n"
 		"Options: (flag options are toggles, once active, twice\n"
 		"deactivate)\n"
@@ -84,6 +84,7 @@ void do_help()
 		"      string.  Valid values for format are given below.\n"
 		"  -h  help.  Shows this use screen.\n"
 		"  -o  file.  Configures the file to dump output.\n"
+		"  -t  Do timestamping.\n"
 		"  -v  version.  Shows version info.  Version info is\n"
 		"      included also in this screen.\n"
 		"",
@@ -104,7 +105,7 @@ void do_finish()
 int main(int argc, char **argv)
 {
 	int opt;
-	while ((opt = getopt(argc, argv, "125678NOEb:df:ho:v")) != EOF) {
+	while ((opt = getopt(argc, argv, "125678NOEb:df:ho:tv")) != EOF) {
 		switch (opt) {
 		case '1': config_flags &= ~FLAG_MSTOP;
 				  config_flags |=  FLAG_STOP1; break;
@@ -140,6 +141,7 @@ int main(int argc, char **argv)
 		case 'f': output_format = optarg; break;
 		case 'h': config_flags ^= FLAG_HELP; break;
 		case 'o': output_filename = optarg; break;
+		case 't': config_flags ^= FLAG_TIMESTAMP; break;
 		case 'v': config_flags ^= FLAG_VERSION; break;
         default:
              fprintf(stderr,
@@ -165,9 +167,34 @@ int main(int argc, char **argv)
 	}
 
 
-	struct format *fmt = NULL;
-	if (output_format != NULL) {
-		fmt = get_format(output_format);
+	const struct format *fmt
+		= get_format(output_format);
+
+	if (!fmt->f_timestamp && !fmt->f_format) {
+		fprintf(stderr,
+			F("ERROR: invalid driver %s with no functions!!!\n"),
+			fmt->f_name);
+		exit(EXIT_FAILURE);
+	}
+	if (!fmt->f_timestamp) {
+		if (config_flags & FLAG_TIMESTAMP) {
+			fprintf(stderr,
+				F("ERROR: timestamps requested but format %s doesn't"
+					" support timestamping.  Switching to"
+					" non-timestamped output.\n"),
+				fmt->f_name);
+			config_flags &= ~FLAG_TIMESTAMP;
+		}
+	}
+	if (!fmt->f_format) {
+		if (!(config_flags & FLAG_TIMESTAMP)) {
+			fprintf(stderr,
+				F("ERROR: timestamps not requested, but format %s "
+					"can be only timestamped.  "
+					"Switching to timestamped format.\n"),
+				fmt->f_name);
+			config_flags |= FLAG_TIMESTAMP;
+		}
 	}
 
 	if (!argc) {
@@ -264,11 +291,13 @@ int main(int argc, char **argv)
 		}
 		/* res > 0, at least one descriptor has data. */
 		struct timespec ts; /* get timestamp */
-		clock_gettime(CLOCK_REALTIME, &ts);
-		if (config_flags & FLAG_DEBUG) {
-			fprintf(stderr,
-				F("timestamp: %llu.%09lu\n"),
-				ts.tv_sec, ts.tv_nsec);
+		if (config_flags & FLAG_TIMESTAMP) {
+			clock_gettime(CLOCK_REALTIME, &ts);
+			if (config_flags & FLAG_DEBUG) {
+				fprintf(stderr,
+					F("timestamp: %llu.%09lu\n"),
+					ts.tv_sec, ts.tv_nsec);
+			}
 		}
 		struct file_info *list[MAX_FDS];
 		size_t list_n = 0;
@@ -309,10 +338,11 @@ int main(int argc, char **argv)
 
 		/* what we have received is in the buffers, now we have
 		 * to printit, but in paralell form */
-		if (fmt) {
-			for(i = 0; i < list_n; i++) {
-				if (fmt->f_format)		fmt->f_format(list[i]);
-				if (fmt->f_timestamp)	fmt->f_timestamp(list[i], &ts);
+		for(i = 0; i < list_n; i++) {
+			if (config_flags & FLAG_TIMESTAMP) {
+				fmt->f_timestamp(list[i], &ts);
+			} else {
+				fmt->f_format(list[i]);
 			}
 		}
 	} /* for (;;) */

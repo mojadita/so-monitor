@@ -15,7 +15,7 @@ toclean += libstubs.a
 
 RM ?= rm -f
 
-mon_objs = mon.o formats.o tty.o
+mon_objs = mon.o formats.o tty.o hex.o
 mon_deps = libstubs.a
 mon_libs = -lstubs
 mon_ldflags = -L.

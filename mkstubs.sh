@@ -40,6 +40,16 @@ int of_${name}_timestamp(
 		F("unimplemented\n"));
 	return 0;
 }
+
+const
+struct format
+	of_${name}_sp = {
+	"${name}",
+	of_${name}_format,
+	of_${name}_timestamp,
+};
+
+/* end of ${name} driver */
 EOF
 	echo stub_${name}.c
 done

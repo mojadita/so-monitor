@@ -22,14 +22,14 @@ struct format {
 	TIMESTAMP_FUNC((*f_timestamp));
 };
 
-extern struct format formats_table[];
-
 #define _FMT(_fmt) \
 extern FORMAT_FUNC(of_##_fmt##_format); \
-extern TIMESTAMP_FUNC(of_##_fmt##_timestamp);
+extern TIMESTAMP_FUNC(of_##_fmt##_timestamp); \
+extern const struct format of_##_fmt##_sp;
+
 #include "formats.i"
 #undef _FMT
 
-struct format *get_format(const char *name);
+const struct format *get_format(const char *name);
 
 #endif /* _FORMATS_H */

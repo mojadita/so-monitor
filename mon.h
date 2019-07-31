@@ -34,6 +34,8 @@
 #define FLAG_PODD		(2 << 9)
 #define FLAG_PEVEN		(3 << 9)
 
+#define FLAG_TIMESTAMP	(1 << 11)
+
 extern char			   *output_filename,
 		   			   *output_format,
 		   			   *program_name;
