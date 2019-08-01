@@ -10,13 +10,13 @@ mandir   ?= $(prefix)/man
 man1dir	 ?= $(mandir)/man1
 
 targets   = mon
-VERSION   = 0.2-incubating
+VERSION   = 0.3-incubating
 COPYRIGHT = (C) 2019 LUIS COLORADO.  All rights reserved.
 
 CFLAGS += -DVERSION=\""$(VERSION)"\" -DCOPYRIGHT=\""$(COPYRIGHT)"\"
 
 libstubs_sources != mkstubs.sh
-toclean += libstubs.a
+toclean += libstubs.a $(libstubs_sources)
 
 RM ?= rm -f
 INSTALL ?= install
